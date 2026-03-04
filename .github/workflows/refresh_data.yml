@@ -6,6 +6,9 @@ on:
     # Run Mon–Fri at 16:30 US Eastern (20:30 UTC); skip weekends
     - cron: '30 20 * * 1-5'
   workflow_dispatch: # Allow manual run
+  push:
+    paths:
+      - 'watchlist.txt'
 
 jobs:
   build:
