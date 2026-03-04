@@ -112,13 +112,13 @@
         /* ── Watchlist styles ── */
         .watchlist-container { margin-bottom: 15px; }
         .watchlist-header {
-            background-color: #2d3748; padding: 6px 8px; font-weight: bold; font-size: 0.9em;
+            background-color: #1d3461; padding: 6px 8px; font-weight: bold; font-size: 0.9em;
             display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 3; color: #e0e0e0; border-bottom: 1px solid #444;
+            position: sticky; top: 0; z-index: 3; color: #e0e0e0; border-bottom: 1px solid #2d4a8a;
         }
         .watchlist-header span { display: flex; align-items: center; gap: 6px; }
         .watchlist-add-row {
-            display: flex; gap: 6px; padding: 6px 8px; background-color: #222c3a; border-bottom: 1px solid #333;
+            display: flex; gap: 6px; padding: 6px 8px; background-color: #161f2e; border-bottom: 1px solid #333;
         }
         .watchlist-input {
             flex: 1; background-color: #1a1a1a; border: 1px solid #4a5568; color: #e0e0e0;
@@ -133,15 +133,24 @@
             transition: background 0.15s;
         }
         .watchlist-add-btn:hover { background-color: #2563eb; }
-        .watchlist-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+
+        /* Watchlist uses same ticker-table styles but with blue tint header */
+        .watchlist-table { width: 100%; border-collapse: collapse; font-size: 0.85em; table-layout: fixed; }
+        .watchlist-table th:nth-child(3), .watchlist-table td:nth-child(3) { width: 59px; padding: 6px 4px; overflow: hidden; }
+        .watchlist-table th:nth-child(4), .watchlist-table td:nth-child(4) { width: 59px; padding: 6px 4px; overflow: hidden; }
+        .watchlist-table th:nth-child(5), .watchlist-table td:nth-child(5) { width: 59px; padding: 6px 4px; overflow: hidden; }
+        .watchlist-table th:nth-child(6), .watchlist-table td:nth-child(6) { width: 59px; padding: 6px 4px; overflow: hidden; }
+        .watchlist-table th:nth-child(10), .watchlist-table td:nth-child(10) { width: 110px; padding: 2px 4px; overflow: hidden; }
         .watchlist-table th {
-            text-align: left; padding: 6px 8px; background-color: #2d3748;
-            font-weight: bold; border-bottom: 1px solid #444; color: #e0e0e0; font-size: 0.85em;
+            text-align: left; padding: 6px 8px; background-color: #1d3461; cursor: default; user-select: none;
+            font-weight: bold; border-bottom: 1px solid #2d4a8a; color: #93c5fd;
         }
-        .watchlist-table td { padding: 6px 8px; border-bottom: 1px solid #333; vertical-align: middle; color: #e0e0e0; }
+        .watchlist-table td { padding: 6px 8px; border-bottom: 1px solid #1e2d45; vertical-align: middle; color: #e0e0e0; }
         .watchlist-row { cursor: pointer; transition: background 0.15s; }
-        .watchlist-row:hover { background-color: #2a2a2a; }
-        .watchlist-row.active { background-color: #374151; }
+        .watchlist-row:hover { background-color: #1e2d45; }
+        .watchlist-row.active { background-color: #2d3f5c; }
+        .watchlist-row td.price-up { color: #10b981 !important; font-weight: bold; }
+        .watchlist-row td.price-down { color: #ef4444 !important; font-weight: bold; }
         .watchlist-delete-btn {
             background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1em;
             padding: 0 4px; line-height: 1; transition: color 0.15s;
@@ -149,10 +158,7 @@
         .watchlist-delete-btn:hover { color: #ef4444; }
         .watchlist-empty { padding: 16px; text-align: center; color: #6b7280; font-size: 0.85em; font-style: italic; }
         .wl-ticker-label { display: inline-block; padding: 2px 8px; border-radius: 12px; background-color: #1d4ed8; color: #e0e0e0; }
-        .wl-loading { color: #6b7280; font-size: 0.8em; font-style: italic; }
-        .wl-price-up { color: #10b981 !important; font-weight: bold; }
-        .wl-price-down { color: #ef4444 !important; font-weight: bold; }
-        .wl-error { color: #f59e0b; font-size: 0.8em; }
+        .wl-not-found { color: #6b7280; font-size: 0.75em; font-style: italic; }
     </style>
 </head>
 <body>
@@ -179,7 +185,7 @@
         <div class="watchlist-container" id="watchlist-section">
             <div class="watchlist-header">
                 <span>⭐ WATCHLIST</span>
-                <span style="font-size:0.75em;color:#9ca3af;font-weight:normal" id="wl-count"></span>
+                <span style="font-size:0.75em;color:#93c5fd;font-weight:normal" id="wl-count"></span>
             </div>
             <div class="watchlist-add-row">
                 <input class="watchlist-input" id="wl-input" placeholder="Add ticker… e.g. AAPL" maxlength="12">
@@ -222,28 +228,23 @@
         try { localStorage.setItem(WL_KEY, JSON.stringify(list)); } catch(e) {}
     }
 
-    // Fetch quote from Yahoo Finance via a CORS proxy
-    async function fetchQuote(ticker) {
-        // Use Yahoo Finance v8 (public, no auth needed for basic quote)
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
-        try {
-            const res = await fetch(url, { headers: { Accept: 'application/json' } });
-            if (!res.ok) return null;
-            const data = await res.json();
-            const meta = data?.chart?.result?.[0]?.meta;
-            if (!meta) return null;
-            const price = meta.regularMarketPrice;
-            const prev  = meta.chartPreviousClose || meta.previousClose;
-            const chg   = prev ? ((price - prev) / prev * 100) : null;
-            return { price, chg };
-        } catch(e) { return null; }
+    // Find ticker data from snapshot (all groups)
+    function wlFindInSnapshot(ticker) {
+        if (!snapshot || !snapshot.groups) return null;
+        for (var groupName in snapshot.groups) {
+            var rows = snapshot.groups[groupName];
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].ticker === ticker) return { row: rows[i], group: groupName };
+            }
+        }
+        return null;
     }
 
-    async function wlRender() {
-        const list = wlLoad();
-        const body = document.getElementById('watchlist-body');
-        const countEl = document.getElementById('wl-count');
-        countEl.textContent = list.length > 0 ? `(${list.length})` : '';
+    function wlRender() {
+        var list = wlLoad();
+        var body = document.getElementById('watchlist-body');
+        var countEl = document.getElementById('wl-count');
+        countEl.textContent = list.length > 0 ? '(' + list.length + ')' : '';
 
         if (list.length === 0) {
             body.innerHTML = '<div class="watchlist-empty">No tickers yet — add one above!</div>';
@@ -251,59 +252,101 @@
             return;
         }
 
-        // Build table skeleton first
-        let html = `<table class="watchlist-table" id="watchlist-table">
-            <thead><tr>
-                <th>Ticker</th>
-                <th>Price</th>
-                <th>Daily%</th>
-                <th></th>
-            </tr></thead>
-            <tbody id="wl-tbody">`;
+        // Default ranges for watchlist (use snapshot global ranges if available, else fallback)
+        var ranges = { daily: [-10,10], intra: [-10,10], '5d': [-20,20], '20d': [-30,30] };
+
+        var html = '<table class="watchlist-table" id="watchlist-table">';
+        html += '<thead><tr>';
+        html += '<th>Ticker</th>';
+        html += '<th>Grade</th>';
+        html += '<th>Daily</th>';
+        html += '<th>Intra</th>';
+        html += '<th>5D</th>';
+        html += '<th>20D</th>';
+        html += '<th>ATR%</th>';
+        html += '<th>ATRx</th>';
+        html += '<th>1M-VARS</th>';
+        html += '<th>VARS</th>';
+        html += '<th>LETF</th>';
+        html += '<th></th>';
+        html += '</tr></thead><tbody id="wl-tbody">';
+
         list.forEach(function(ticker) {
-            html += `<tr class="watchlist-row" id="wlrow-${ticker}" onclick="updateChart('${ticker}', this)" data-symbol="${ticker}">
-                <td><span class="wl-ticker-label">${ticker}</span></td>
-                <td id="wlprice-${ticker}" class="wl-loading">…</td>
-                <td id="wlchg-${ticker}" class="wl-loading">…</td>
-                <td><button class="watchlist-delete-btn" title="Remove" onclick="event.stopPropagation();watchlistRemove('${ticker}')">✕</button></td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-        body.innerHTML = html;
-        updateAllTickerRows();
+            var found = wlFindInSnapshot(ticker);
+            var r = found ? found.row : null;
+            var group = found ? found.group : null;
 
-        // Async fetch prices for each ticker
-        list.forEach(async function(ticker) {
-            const q = await fetchQuote(ticker);
-            const priceEl = document.getElementById('wlprice-' + ticker);
-            const chgEl   = document.getElementById('wlchg-' + ticker);
-            if (!priceEl || !chgEl) return;
-
-            if (!q) {
-                priceEl.innerHTML = '<span class="wl-error">N/A</span>';
-                chgEl.innerHTML   = '<span class="wl-error">—</span>';
+            if (!r) {
+                // Not in snapshot — show placeholder row
+                html += '<tr class="watchlist-row" onclick="updateChart(\'' + ticker + '\', this)" data-symbol="' + ticker + '">';
+                html += '<td><span class="wl-ticker-label">' + ticker + '</span></td>';
+                html += '<td colspan="10"><span class="wl-not-found">Not in snapshot data</span></td>';
+                html += '<td><button class="watchlist-delete-btn" title="Remove" onclick="event.stopPropagation();watchlistRemove(\'' + ticker + '\')">✕</button></td>';
+                html += '</tr>';
                 return;
             }
 
-            priceEl.textContent = q.price != null ? q.price.toFixed(2) : 'N/A';
-            priceEl.className   = '';
+            // Use group-specific ranges if available
+            var gr = (snapshot.column_ranges && snapshot.column_ranges[group]) || ranges;
 
-            if (q.chg != null) {
-                const sign = q.chg >= 0 ? '+' : '';
-                chgEl.textContent = sign + q.chg.toFixed(2) + '%';
-                chgEl.className   = q.chg >= 0 ? 'wl-price-up' : 'wl-price-down';
-            } else {
-                chgEl.textContent = '—';
-                chgEl.className   = '';
-            }
+            var daily = r.daily, intra = r.intra, five = r['5d'], twenty = r['20d'];
+            var dailyW = vizWidth(daily, gr.daily[0], gr.daily[1]);
+            var intraW = vizWidth(intra, gr.intra[0], gr.intra[1]);
+            var fiveW  = vizWidth(five, gr['5d'][0], gr['5d'][1]);
+            var twentyW= vizWidth(twenty, gr['20d'][0], gr['20d'][1]);
+            var dailyCl  = daily  != null ? (daily  > 0 ? 'price-up' : (daily  < 0 ? 'price-down' : '')) : '';
+            var intraCl  = intra  != null ? (intra  > 0 ? 'price-up' : (intra  < 0 ? 'price-down' : '')) : '';
+            var fiveCl   = five   != null ? (five   > 0 ? 'price-up' : (five   < 0 ? 'price-down' : '')) : '';
+            var twentyCl = twenty != null ? (twenty > 0 ? 'price-up' : (twenty < 0 ? 'price-down' : '')) : '';
+            var abc = r.abc || '';
+            var atrPct = r.atr_pct != null ? r.atr_pct : 0;
+            var dist   = r.dist_sma50_atr != null ? r.dist_sma50_atr : 0;
+            var rs     = r.rs != null ? r.rs : 0;
+            var letf   = (r.long && r.long.length) || (r.short && r.short.length) ? '1' : '0';
+
+            html += '<tr class="watchlist-row" onclick="updateChart(\'' + ticker + '\', this)" data-symbol="' + ticker + '">';
+            html += '<td><span class="wl-ticker-label">' + ticker + '</span></td>';
+            html += '<td>' + (abc ? '<span class="abc-rating abc-' + abc.toLowerCase() + '">' + abc + '</span>' : '-') + '</td>';
+
+            // Daily
+            html += '<td class="' + dailyCl + '">' + (daily != null ?
+                '<div class="value-visualization"><div class="value-bar ' + (daily >= 0 ? 'positive' : 'negative') + '" style="width:' + dailyW + '%"></div><span class="value-text">' + (daily >= 0 ? '+' : '') + daily.toFixed(2) + '%</span></div>' : 'N/A') + '</td>';
+            // Intra
+            html += '<td class="' + intraCl + '">' + (intra != null ?
+                '<div class="value-visualization"><div class="value-bar ' + (intra >= 0 ? 'positive' : 'negative') + '" style="width:' + intraW + '%"></div><span class="value-text">' + (intra >= 0 ? '+' : '') + intra.toFixed(2) + '%</span></div>' : 'N/A') + '</td>';
+            // 5D
+            html += '<td class="' + fiveCl + '">' + (five != null ?
+                '<div class="value-visualization"><div class="value-bar ' + (five >= 0 ? 'positive' : 'negative') + '" style="width:' + fiveW + '%"></div><span class="value-text">' + (five >= 0 ? '+' : '') + five.toFixed(2) + '%</span></div>' : 'N/A') + '</td>';
+            // 20D
+            html += '<td class="' + twentyCl + '">' + (twenty != null ?
+                '<div class="value-visualization"><div class="value-bar ' + (twenty >= 0 ? 'positive' : 'negative') + '" style="width:' + twentyW + '%"></div><span class="value-text">' + (twenty >= 0 ? '+' : '') + twenty.toFixed(2) + '%</span></div>' : 'N/A') + '</td>';
+
+            html += '<td>' + (r.atr_pct != null ? r.atr_pct.toFixed(1) + '%' : 'N/A') + '</td>';
+            html += '<td>' + (r.dist_sma50_atr != null ? r.dist_sma50_atr.toFixed(2) : 'N/A') + '</td>';
+            html += '<td>' + (r.rs != null ? Math.round(r.rs) + '%' : 'N/A') + '</td>';
+            html += '<td>' + (r.rs_chart ? '<img src="' + r.rs_chart + '" class="rs-chart" alt="RS">' : 'N/A') + '</td>';
+
+            // LETF
+            html += '<td class="etf-list">';
+            if (r.long && r.long.length) html += r.long.map(function(etf){ return '<span class="long-etf" onclick="event.stopPropagation();updateChart(\'' + etf + '\')">' + etf + '</span>'; }).join(', ');
+            if (r.short && r.short.length) { if (r.long && r.long.length) html += '<br>'; html += r.short.map(function(etf){ return '<span class="short-etf" onclick="event.stopPropagation();updateChart(\'' + etf + '\')">' + etf + '</span>'; }).join(', '); }
+            if (!(r.long && r.long.length) && !(r.short && r.short.length)) html += '-';
+            html += '</td>';
+
+            html += '<td><button class="watchlist-delete-btn" title="Remove" onclick="event.stopPropagation();watchlistRemove(\'' + ticker + '\')">✕</button></td>';
+            html += '</tr>';
         });
+
+        html += '</tbody></table>';
+        body.innerHTML = html;
+        updateAllTickerRows();
     }
 
     window.watchlistAdd = function() {
-        const input = document.getElementById('wl-input');
-        const raw   = input.value.trim().toUpperCase();
+        var input = document.getElementById('wl-input');
+        var raw   = input.value.trim().toUpperCase();
         if (!raw) return;
-        const list  = wlLoad();
+        var list  = wlLoad();
         if (list.includes(raw)) { input.value = ''; return; }
         list.push(raw);
         wlSave(list);
@@ -312,19 +355,18 @@
     };
 
     window.watchlistRemove = function(ticker) {
-        const list = wlLoad().filter(function(t) { return t !== ticker; });
+        var list = wlLoad().filter(function(t) { return t !== ticker; });
         wlSave(list);
         wlRender();
     };
 
     // Allow Enter key to add
     document.addEventListener('DOMContentLoaded', function() {
-        const inp = document.getElementById('wl-input');
+        var inp = document.getElementById('wl-input');
         if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') window.watchlistAdd(); });
     });
-    // Also attach after DOM is available
     setTimeout(function() {
-        const inp = document.getElementById('wl-input');
+        var inp = document.getElementById('wl-input');
         if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') window.watchlistAdd(); });
     }, 500);
 
@@ -349,7 +391,7 @@
     }
 
     function renderEvents(events) {
-        const el = document.getElementById('events-content');
+        var el = document.getElementById('events-content');
         if (!events || events.length === 0) {
             el.innerHTML = '<div class="event-item">No high-importance U.S. macro events in the next 7 days.</div>';
             return;
@@ -372,7 +414,6 @@
             return;
         }
         var html = '';
-        // "Countries" removed — replaced by Watchlist above
         var groupOrder = ['Indices', 'S&P Style ETFs', 'Sel Sectors', 'EW Sectors', 'Industries'];
         for (var g = 0; g < groupOrder.length; g++) {
             var groupName = groupOrder[g];
@@ -552,7 +593,6 @@
 
     function updateAllTickerRows() {
         allTickerRows = [];
-        // Include watchlist rows first
         [].slice.call(document.querySelectorAll('.watchlist-row')).forEach(function(row) { allTickerRows.push(row); });
         document.querySelectorAll('.ticker-table').forEach(function(table) {
             [].slice.call(table.querySelectorAll('.ticker-row')).forEach(function(row) { allTickerRows.push(row); });
@@ -600,7 +640,7 @@
             meta = results[2];
             renderEvents(events);
             renderGroups();
-            // Render watchlist after DOM is ready
+            // Render watchlist AFTER snapshot is loaded so wlFindInSnapshot works
             wlRender();
         }).catch(function() {
             document.getElementById('groups-container').innerHTML = '<div class="loading-msg">LOADING DATA... (Run scripts/build_data.py or wait for GitHub Actions)</div>';
