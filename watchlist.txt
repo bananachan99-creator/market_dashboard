@@ -1,4 +1,4 @@
-# Strong RS
+# My Watchlist
 CRCL
 KGS
 PWR
@@ -29,7 +29,6 @@ NBIS
 VRT
 TER
 MOD
-# Watch
 LRCX
 ASML
 FORM
@@ -38,7 +37,6 @@ MU
 SOLS
 BE
 VIAV
-# Waiting
 CVX
 YOU
 RNG
