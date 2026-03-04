@@ -344,10 +344,29 @@ def main():
     print("Fetching economic events...")
     events = get_upcoming_key_events()
 
+    # Load watchlist.txt from repo root (one ticker per line, # = comment)
+    watchlist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "watchlist.txt")
+    watchlist_tickers = []
+    if os.path.exists(watchlist_path):
+        with open(watchlist_path, "r", encoding="utf-8") as f:
+            for line in f:
+                t = line.strip().upper()
+                if t and not t.startswith("#"):
+                    watchlist_tickers.append(t)
+        print(f"Loaded {len(watchlist_tickers)} tickers from watchlist.txt: {watchlist_tickers}")
+    else:
+        print("watchlist.txt not found, skipping Watchlist group.")
+
+    # Build group order: Watchlist first (if any), then existing groups
+    all_groups = {}
+    if watchlist_tickers:
+        all_groups["Watchlist"] = watchlist_tickers
+    all_groups.update(STOCK_GROUPS)
+
     print("Fetching stock data (no Liquid Stocks)...")
     groups_data = {}
     all_ticker_data = {}
-    for group_name, tickers in STOCK_GROUPS.items():
+    for group_name, tickers in all_groups.items():
         rows = []
         for i, ticker in enumerate(tickers):
             print(f"  [{group_name}] {i+1}/{len(tickers)} {ticker}")
