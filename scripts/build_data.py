@@ -25,7 +25,6 @@ try:
 except ImportError:
     investpy = None
 
-# --- Config: no Liquid Stocks ---
 KEY_EVENTS = [
     "Fed", "Federal Reserve", "Interest Rate", "FOMC",
     "ISM Manufacturing", "ISM Non-Manufacturing", "ISM Services", "ISM",
@@ -37,21 +36,15 @@ KEY_EVENTS = [
     "Beige Book", "Fed Minutes", "JOLTS", "Job Openings"
 ]
 
+# Only Indices + Industries
 STOCK_GROUPS = {
     "Indices": ["QQQE", "MGK", "QQQ", "IBIT", "RSP", "MDY", "IWM", "TLT", "SPY", "ETHA", "DIA"],
-    "S&P Style ETFs": ["IJS", "IJR", "IJT", "IJJ", "IJH", "IJK", "IVE", "IVV", "IVW"],
-    "Sel Sectors": ["XLK", "XLI", "XLC", "XLF", "XLU", "XLY", "XLRE", "XLP", "XLB", "XLE", "XLV"],
-    "EW Sectors": ["RSPT", "RSPC", "RSPN", "RSPF", "RSP", "RSPD", "RSPU", "RSPR", "RSPH", "RSPM", "RSPS", "RSPG"],
     "Industries": [
         "TAN", "KCE", "IBUY", "QQQE", "JETS", "IBB", "SMH", "CIBR", "UTES", "ROBO", "IGV", "WCLD", "ITA", "PAVE", "BLOK", "AIQ", "IYZ", "PEJ", "FDN", "KBE",
         "UNG", "BOAT", "KWEB", "KRE", "IBIT", "XRT", "IHI", "DRIV", "MSOS", "SOCL", "XLU", "ARKF", "SLX", "ARKK", "XTN", "XME", "KIE", "GLD", "GXC", "SCHH",
         "GDX", "IPAY", "IWM", "XOP", "VNQ", "EATZ", "FXI", "DBA", "ICLN", "SILJ", "REZ", "LIT", "SLV", "XHB", "XHE", "PBJ", "USO", "DBC", "FCG", "XBI",
         "ARKG", "CPER", "XES", "OIH", "PPH", "FNGS", "URA", "WGMI", "REMX"
     ],
-    "Countries": [
-        "EZA", "ARGT", "EWA", "THD", "EIDO", "EWC", "GREK", "EWP", "EWG", "EWL", "EUFN", "EWY", "IEUR", "EFA", "ACWI",
-        "IEV", "EWQ", "EWI", "EWJ", "EWW", "ECH", "EWD", "ASHR", "EWS", "KSA", "INDA", "EEM", "EWZ", "TUR", "EWH", "EWT", "MCHI"
-    ]
 }
 
 LEVERAGED_ETFS = {
@@ -333,6 +326,103 @@ def get_stock_data(ticker_symbol, charts_dir):
         return None
 
 
+# ── Screener functions ────────────────────────────────────────────────────────
+
+def get_index_components(etf_symbol):
+    """Get holdings of SPY or QQQ via Wikipedia"""
+    try:
+        if etf_symbol == 'SPY':
+            table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+            return table['Symbol'].str.replace('.', '-', regex=False).tolist()
+        elif etf_symbol == 'QQQ':
+            tables = pd.read_html('https://en.wikipedia.org/wiki/Nasdaq-100')
+            for t in tables:
+                if 'Ticker' in t.columns:
+                    return t['Ticker'].tolist()
+        return []
+    except Exception as e:
+        print(f"  Could not fetch {etf_symbol} components: {e}")
+        return []
+
+
+def get_screener_universe():
+    """Build universe from SPY + QQQ components"""
+    print("  Fetching index components for screener universe...")
+    spy = get_index_components('SPY')
+    qqq = get_index_components('QQQ')
+    universe = list(set(spy + qqq))
+    print(f"  Universe size: {len(universe)} tickers (SPY+QQQ)")
+    return universe
+
+
+def run_screener(universe, screener_type='trend', top_n=10):
+    """
+    screener_type='trend':
+        Price > $20, Price > SMA50, Price > SMA200, Avg Volume > 500K
+
+    screener_type='momentum':
+        Price > $20, Avg Volume > 500K, Relative Volume > 3x, Today > +10%
+    """
+    print(f"  Running {screener_type} screener on {len(universe)} tickers...")
+    results = []
+    spy_cache = {}  # reuse SPY data
+
+    for i, ticker in enumerate(universe):
+        try:
+            stock = yf.Ticker(ticker)
+
+            if screener_type == 'trend':
+                hist = stock.history(period='1y')
+                if len(hist) < 200:
+                    continue
+                price = hist['Close'].iloc[-1]
+                if price < 20:
+                    continue
+                avg_vol = hist['Volume'].iloc[-21:-1].mean()
+                if avg_vol < 500000:
+                    continue
+                sma50 = hist['Close'].rolling(50).mean().iloc[-1]
+                sma200 = hist['Close'].rolling(200).mean().iloc[-1]
+                if not (price > sma50 and price > sma200):
+                    continue
+                score = price / sma50
+                results.append((ticker, score))
+
+            elif screener_type == 'momentum':
+                hist = stock.history(period='60d')
+                if len(hist) < 22:
+                    continue
+                price = hist['Close'].iloc[-1]
+                if price < 20:
+                    continue
+                avg_vol = hist['Volume'].iloc[-21:-1].mean()
+                if avg_vol < 500000:
+                    continue
+                today_open = hist['Open'].iloc[-1]
+                today_close = hist['Close'].iloc[-1]
+                today_pct = (today_close / today_open - 1) * 100
+                if today_pct < 10:
+                    continue
+                today_vol = hist['Volume'].iloc[-1]
+                rel_vol = today_vol / avg_vol if avg_vol > 0 else 0
+                if rel_vol < 3:
+                    continue
+                results.append((ticker, today_pct))
+
+            if i % 50 == 0:
+                print(f"    [{screener_type}] Screened {i}/{len(universe)}...")
+            time.sleep(0.08)
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    top = [t for t, _ in results[:top_n]]
+    print(f"  {screener_type} screener: {len(results)} matches, top {len(top)}: {top}")
+    return top
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", default="data", help="Output directory (default: data)")
@@ -341,35 +431,60 @@ def main():
     charts_dir = os.path.join(out_dir, "charts")
     os.makedirs(charts_dir, exist_ok=True)
 
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     print("Fetching economic events...")
     events = get_upcoming_key_events()
 
-    # Load watchlist.txt from repo root (one ticker per line, # = comment)
-    watchlist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "watchlist.txt")
-    watchlist_tickers = []
-    if os.path.exists(watchlist_path):
-        with open(watchlist_path, "r", encoding="utf-8") as f:
+    # ── Load manual watchlist ─────────────────────────────────────────────
+    manual_path = os.path.join(repo_root, "watchlist_manual.txt")
+    manual_tickers = []
+    if os.path.exists(manual_path):
+        with open(manual_path, "r", encoding="utf-8") as f:
             for line in f:
                 t = line.strip().upper()
                 if t and not t.startswith("#"):
-                    watchlist_tickers.append(t)
-        print(f"Loaded {len(watchlist_tickers)} tickers from watchlist.txt: {watchlist_tickers}")
+                    manual_tickers.append(t)
+        print(f"Loaded {len(manual_tickers)} manual tickers from watchlist_manual.txt")
     else:
-        print("watchlist.txt not found, skipping Watchlist group.")
+        print("watchlist_manual.txt not found — create it in repo root to add manual tickers.")
 
-    # Build group order: Watchlist first (if any), then existing groups
+    # ── Run screeners ─────────────────────────────────────────────────────
+    print("Running screeners...")
+    universe = get_screener_universe()
+    trend_tickers    = run_screener(universe, screener_type='trend',    top_n=10)
+    momentum_tickers = run_screener(universe, screener_type='momentum', top_n=10)
+    screener_tickers = list(dict.fromkeys(trend_tickers + momentum_tickers))  # dedup, keep order
+
+    # Save screener results so it's visible in repo
+    screener_out = os.path.join(repo_root, "watchlist_screener.txt")
+    with open(screener_out, "w", encoding="utf-8") as f:
+        f.write("# Auto-generated by screener — do not edit manually\n")
+        f.write("# Trend Screener (Price>SMA50>SMA200, AvgVol>500K) — Top 10\n")
+        for t in trend_tickers:
+            f.write(t + "\n")
+        f.write("# Momentum Screener (RelVol>3x, Today>+10%, AvgVol>500K) — Top 10\n")
+        for t in momentum_tickers:
+            f.write(t + "\n")
+
+    # ── Build all groups ──────────────────────────────────────────────────
     all_groups = {}
-    if watchlist_tickers:
-        all_groups["Watchlist"] = watchlist_tickers
+    if manual_tickers:
+        all_groups["Watchlist"] = manual_tickers
+    if screener_tickers:
+        all_groups["Screener"] = screener_tickers
     all_groups.update(STOCK_GROUPS)
 
-    print("Fetching stock data (no Liquid Stocks)...")
+    print("Fetching stock data...")
     groups_data = {}
     all_ticker_data = {}
     for group_name, tickers in all_groups.items():
         rows = []
         for i, ticker in enumerate(tickers):
             print(f"  [{group_name}] {i+1}/{len(tickers)} {ticker}")
+            if ticker in all_ticker_data:
+                rows.append(all_ticker_data[ticker])
+                continue
             row = get_stock_data(ticker, charts_dir)
             if row:
                 rows.append(row)
@@ -380,15 +495,15 @@ def main():
     print("Computing column ranges...")
     column_ranges = {}
     for group_name, rows in groups_data.items():
-        daily_v = [r["daily"] for r in rows if r.get("daily") is not None]
-        intra_v = [r["intra"] for r in rows if r.get("intra") is not None]
-        five_v = [r["5d"] for r in rows if r.get("5d") is not None]
-        twenty_v = [r["20d"] for r in rows if r.get("20d") is not None]
+        daily_v  = [r["daily"] for r in rows if r.get("daily")  is not None]
+        intra_v  = [r["intra"] for r in rows if r.get("intra")  is not None]
+        five_v   = [r["5d"]    for r in rows if r.get("5d")     is not None]
+        twenty_v = [r["20d"]   for r in rows if r.get("20d")    is not None]
         column_ranges[group_name] = {
-            "daily": (min(daily_v) if daily_v else -10, max(daily_v) if daily_v else 10),
-            "intra": (min(intra_v) if intra_v else -10, max(intra_v) if intra_v else 10),
-            "5d": (min(five_v) if five_v else -20, max(five_v) if five_v else 20),
-            "20d": (min(twenty_v) if twenty_v else -30, max(twenty_v) if twenty_v else 30),
+            "daily": (min(daily_v)  if daily_v  else -10, max(daily_v)  if daily_v  else 10),
+            "intra": (min(intra_v)  if intra_v  else -10, max(intra_v)  if intra_v  else 10),
+            "5d":    (min(five_v)   if five_v   else -20, max(five_v)   if five_v   else 20),
+            "20d":   (min(twenty_v) if twenty_v else -30, max(twenty_v) if twenty_v else 30),
         }
 
     snapshot = {
@@ -405,8 +520,8 @@ def main():
     }
 
     snapshot_path = os.path.join(out_dir, "snapshot.json")
-    events_path = os.path.join(out_dir, "events.json")
-    meta_path = os.path.join(out_dir, "meta.json")
+    events_path   = os.path.join(out_dir, "events.json")
+    meta_path     = os.path.join(out_dir, "meta.json")
 
     with open(snapshot_path, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, ensure_ascii=False, indent=2)
