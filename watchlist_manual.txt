@@ -89,3 +89,8 @@ amd
 aapl
 open
 unh
+rklb
+fig
+crwd
+anet
+
