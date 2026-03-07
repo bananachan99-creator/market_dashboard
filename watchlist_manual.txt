@@ -7,6 +7,11 @@ NXT
 CRS
 FIX
 TMDX
+you
+bw
+avgo
+mrvl
+dell
 AA
 WDC
 SPHR
