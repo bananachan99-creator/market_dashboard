@@ -1,1 +1,52 @@
-[]
+[
+  {
+    "date": "05/05/2026",
+    "time": "14:00",
+    "event": "ISM Non-Manufacturing PMI  (Apr)"
+  },
+  {
+    "date": "05/05/2026",
+    "time": "14:00",
+    "event": "ISM Non-Manufacturing Prices  (Apr)"
+  },
+  {
+    "date": "05/05/2026",
+    "time": "14:00",
+    "event": "JOLTS Job Openings  (Mar)"
+  },
+  {
+    "date": "06/05/2026",
+    "time": "12:15",
+    "event": "ADP Nonfarm Employment Change  (Apr)"
+  },
+  {
+    "date": "07/05/2026",
+    "time": "12:30",
+    "event": "Initial Jobless Claims"
+  },
+  {
+    "date": "08/05/2026",
+    "time": "12:30",
+    "event": "Nonfarm Payrolls  (Apr)"
+  },
+  {
+    "date": "08/05/2026",
+    "time": "12:30",
+    "event": "Unemployment Rate  (Apr)"
+  },
+  {
+    "date": "12/05/2026",
+    "time": "12:30",
+    "event": "Core CPI (MoM)  (Apr)"
+  },
+  {
+    "date": "12/05/2026",
+    "time": "12:30",
+    "event": "CPI (MoM)  (Apr)"
+  },
+  {
+    "date": "12/05/2026",
+    "time": "12:30",
+    "event": "CPI (YoY)  (Apr)"
+  }
+]
