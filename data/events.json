@@ -1,20 +1,5 @@
 [
   {
-    "date": "05/05/2026",
-    "time": "14:00",
-    "event": "ISM Non-Manufacturing PMI  (Apr)"
-  },
-  {
-    "date": "05/05/2026",
-    "time": "14:00",
-    "event": "ISM Non-Manufacturing Prices  (Apr)"
-  },
-  {
-    "date": "05/05/2026",
-    "time": "14:00",
-    "event": "JOLTS Job Openings  (Mar)"
-  },
-  {
     "date": "06/05/2026",
     "time": "12:15",
     "event": "ADP Nonfarm Employment Change  (Apr)"
@@ -48,5 +33,10 @@
     "date": "12/05/2026",
     "time": "12:30",
     "event": "CPI (YoY)  (Apr)"
+  },
+  {
+    "date": "13/05/2026",
+    "time": "12:30",
+    "event": "PPI (MoM)  (Apr)"
   }
 ]
