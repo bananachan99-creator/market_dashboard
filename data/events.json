@@ -1,42 +1,52 @@
 [
   {
-    "date": "06/05/2026",
-    "time": "12:15",
-    "event": "ADP Nonfarm Employment Change  (Apr)"
-  },
-  {
     "date": "07/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Initial Jobless Claims"
   },
   {
     "date": "08/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Nonfarm Payrolls  (Apr)"
   },
   {
     "date": "08/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Unemployment Rate  (Apr)"
   },
   {
     "date": "12/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Core CPI (MoM)  (Apr)"
   },
   {
     "date": "12/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "CPI (MoM)  (Apr)"
   },
   {
     "date": "12/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "CPI (YoY)  (Apr)"
   },
   {
     "date": "13/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "PPI (MoM)  (Apr)"
+  },
+  {
+    "date": "14/05/2026",
+    "time": "13:30",
+    "event": "Core Retail Sales (MoM)  (Apr)"
+  },
+  {
+    "date": "14/05/2026",
+    "time": "13:30",
+    "event": "Initial Jobless Claims"
+  },
+  {
+    "date": "14/05/2026",
+    "time": "13:30",
+    "event": "Retail Sales (MoM)  (Apr)"
   }
 ]
