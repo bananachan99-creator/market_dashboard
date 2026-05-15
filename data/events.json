@@ -1,32 +1,17 @@
 [
   {
-    "date": "14/05/2026",
-    "time": "12:30",
-    "event": "Core Retail Sales (MoM)  (Apr)"
-  },
-  {
-    "date": "14/05/2026",
-    "time": "12:30",
-    "event": "Initial Jobless Claims"
-  },
-  {
-    "date": "14/05/2026",
-    "time": "12:30",
-    "event": "Retail Sales (MoM)  (Apr)"
-  },
-  {
     "date": "20/05/2026",
-    "time": "18:00",
+    "time": "19:00",
     "event": "FOMC Meeting Minutes"
   },
   {
     "date": "21/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Initial Jobless Claims"
   },
   {
     "date": "21/05/2026",
-    "time": "12:30",
+    "time": "13:30",
     "event": "Philadelphia Fed Manufacturing Index  (May)"
   }
 ]
