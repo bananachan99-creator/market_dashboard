@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "date": "25/06/2026",
+    "time": "13:30",
+    "event": "Core PCE Price Index (MoM)  (May)"
+  },
+  {
+    "date": "25/06/2026",
+    "time": "13:30",
+    "event": "Core PCE Price Index (YoY)  (May)"
+  },
+  {
+    "date": "25/06/2026",
+    "time": "13:30",
+    "event": "Durable Goods Orders (MoM)  (May)"
+  },
+  {
+    "date": "25/06/2026",
+    "time": "13:30",
+    "event": "GDP (QoQ)  (Q1)"
+  },
+  {
+    "date": "25/06/2026",
+    "time": "13:30",
+    "event": "Initial Jobless Claims"
+  }
+]
