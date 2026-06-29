@@ -1,1 +1,52 @@
-[]
+[
+  {
+    "date": "01/07/2026",
+    "time": "12:15",
+    "event": "ADP Nonfarm Employment Change  (Jun)"
+  },
+  {
+    "date": "01/07/2026",
+    "time": "14:00",
+    "event": "ISM Manufacturing PMI  (Jun)"
+  },
+  {
+    "date": "01/07/2026",
+    "time": "14:00",
+    "event": "ISM Manufacturing Prices  (Jun)"
+  },
+  {
+    "date": "02/07/2026",
+    "time": "12:30",
+    "event": "Initial Jobless Claims"
+  },
+  {
+    "date": "02/07/2026",
+    "time": "12:30",
+    "event": "Nonfarm Payrolls  (Jun)"
+  },
+  {
+    "date": "02/07/2026",
+    "time": "12:30",
+    "event": "Unemployment Rate  (Jun)"
+  },
+  {
+    "date": "06/07/2026",
+    "time": "14:00",
+    "event": "ISM Non-Manufacturing PMI  (Jun)"
+  },
+  {
+    "date": "06/07/2026",
+    "time": "14:00",
+    "event": "ISM Non-Manufacturing Prices  (Jun)"
+  },
+  {
+    "date": "30/06/2026",
+    "time": "14:00",
+    "event": "CB Consumer Confidence  (Jun)"
+  },
+  {
+    "date": "30/06/2026",
+    "time": "14:00",
+    "event": "JOLTS Job Openings  (May)"
+  }
+]
